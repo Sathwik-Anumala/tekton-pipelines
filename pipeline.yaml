@@ -1,0 +1,42 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: app-build-push
+spec:
+  params:
+    - name: docker-user
+      type: string
+      description: User name for registry
+    - name: image-name
+      type: string
+      description: Name of the image to be created
+    - name: tag
+      type: string
+      description: Tag to the created image
+  resources:
+    - name: repo
+      type: git
+  tasks:
+    - name: build
+      taskRef:
+        name: gradle
+      resources:
+        inputs:
+          - name: repo
+            resource: repo
+    - name: imagebuildpush
+      params:
+        - name: docker-user
+          value: $(params.docker-user)
+        - name: image-name
+          value: $(params.image-name)
+        - name: tag
+          value: $(params.tag)
+      taskRef:
+        name: build-push-image-2
+      resources:
+        inputs:
+          - name: repo
+            resource: repo
+      runAfter:
+        - build
