@@ -4,6 +4,9 @@ metadata:
   name: app-build-push
 spec:
   params:
+    - name: url
+      type: string
+      description: Git url with the source code
     - name: docker-user
       type: string
       description: User name for registry
@@ -13,17 +16,26 @@ spec:
     - name: tag
       type: string
       description: Tag to the created image
-  resources:
-    - name: repo
-      type: git
+  workspaces:
+    - name: pipeline-ws1
   tasks:
+    - name: git-clone
+      params:
+        - name: url
+          value: $(params.url)
+      taskRef:
+        name: git-clone
+      workspaces:
+        - name: output
+          workspace: pipeline-ws1
     - name: build
       taskRef:
-        name: gradle
-      resources:
-        inputs:
-          - name: repo
-            resource: repo
+        name: gradle-build
+      workspaces:
+        - name: output
+          workspace: pipeline-ws1
+      runAfter:
+        - git-clone
     - name: imagebuildpush
       params:
         - name: docker-user
@@ -33,10 +45,9 @@ spec:
         - name: tag
           value: $(params.tag)
       taskRef:
-        name: build-push-image-2
-      resources:
-        inputs:
-          - name: repo
-            resource: repo
+        name: build-push-image
+      workspaces:
+        - name: output
+          workspace: pipeline-ws1
       runAfter:
         - build
